@@ -33,8 +33,18 @@ dir_err () {
 
 SLOTS=/sys/devices/bone_capemgr.*/slots
 
+if [ -e $SLOTS ] ; then
+    DTBOS="cape-universal cape-bone-iio"
+    AIN=/sys/devices/ocp.*/helper.*/AIN0
+else
+    SLOTS=/sys/devices/platform/bone_capemgr/slots
+    DTBOS="cape-universala BB-ADC"
+    AIN=/sys/bus/iio/devices/iio\:device*/in_voltage0_raw
+fi
+
+
 # Make sure required device tree overlay(s) are loaded
-for DTBO in cape-universal cape-bone-iio ; do
+for DTBO in $DTBOS ; do
 
 	if grep -q $DTBO $SLOTS ; then
 		echo $DTBO overlay found
@@ -45,13 +55,13 @@ for DTBO in cape-universal cape-bone-iio ; do
 	fi
 done;
 
-if [ ! -r /sys/devices/ocp.*/helper.*/AIN0 ] ; then
-	echo Analog input files not found in /sys/devices/ocp.*/helper.* >&2
+if [ ! -r /sys/class/uio/uio0 ] ; then
+	echo PRU control files not found in /sys/class/uio/uio0 >&2
 	exit 1;
 fi
 
-if [ ! -r /sys/class/uio/uio0 ] ; then
-	echo PRU control files not found in /sys/class/uio/uio0 >&2
+if [ ! -r  $AIN ] ; then
+	echo Analog input files not found in $AIN >&2
 	exit 1;
 fi
 
@@ -113,13 +123,13 @@ sudo $(which config-pin) -f - <<- EOF
 	P9.22	low	# FET 6
 	P9.23	low	# Machine Power
 	P9.24	low	# E2 Step
-	P9.25	low	# LED
+#	P9.25	low	# LED
 	P9.26	low	# E2 Dir
 	P9.27	low	# FET 3 : E2
-	P9.28	low	# SPI CS0
-	P9.29	low	# SPI MISO
-	P9.30	low	# SPI MOSI
-	P9.31	low	# SPI SCLK
+#	P9.28	low	# SPI CS0
+#	P9.29	low	# SPI MISO
+#	P9.30	low	# SPI MOSI
+#	P9.31	low	# SPI SCLK
 
 	P9.41	low	# FET 5
 	P9.91	in	# Reserved, connected to P9.41
