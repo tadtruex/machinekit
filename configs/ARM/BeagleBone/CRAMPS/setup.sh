@@ -46,13 +46,13 @@ fi
 # Make sure required device tree overlay(s) are loaded
 for DTBO in $DTBOS ; do
 
-	if grep -q $DTBO $SLOTS ; then
-		echo $DTBO overlay found
-	else
-		echo Loading $DTBO overlay
-		sudo -A su -c "echo $DTBO > $SLOTS" || dtbo_err
-		sleep 1
-	fi
+    if grep -q $DTBO $SLOTS ; then
+	echo $DTBO overlay found
+    else
+	echo Loading $DTBO overlay
+	sudo -A su -c "echo $DTBO > $SLOTS" || dtbo_err
+	sleep 1
+    fi
 done;
 
 if [ ! -r /sys/class/uio/uio0 ] ; then
@@ -60,9 +60,13 @@ if [ ! -r /sys/class/uio/uio0 ] ; then
 	exit 1;
 fi
 
-if [ ! -r  $AIN ] ; then
+if [ ! -e  $AIN ] ; then
+    # these seem to take a while to appear.  Try again
+    sleep 3
+    if [ ! -e $AIN ] ; then	
 	echo Analog input files not found in $AIN >&2
 	exit 1;
+    fi
 fi
 
 # Export GPIO pins:
