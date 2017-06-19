@@ -153,6 +153,12 @@ def getHalName(pin):
 def checkAdcInput(pin):
     syspath = '/sys/devices/ocp.*/44e0d000.tscadc/tiadc/iio:device0/'
     tempName = glob.glob(syspath + 'in_voltage' + str(pin.pin) + '_raw')
+
+    if len(tempName) == 0:
+	print("Checking 2nd location")
+        syspath = '/sys/bus/iio/devices/iio:device0/'
+        tempName = glob.glob(syspath + 'in_voltage' + str(pin.pin) + '_raw')
+        
     pin.filename = tempName[0]
     try:
         if len(pin.filename) > 0:
