@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # -*- coding: UTF-8 -*
 import os
 import sys
@@ -705,10 +705,10 @@ class LinuxCNCWrapper():
                 txToolResult.CopyFrom(toolResult)
             id = toolResult.id
             if id in toolMap:
-                toolResult.pocket = toolMap[id]['pocket']
-                toolResult.comment = toolMap[id]['comment']
-                txToolResult.pocket = toolMap[id]['pocket']
-                txToolResult.comment = toolMap[id]['comment']
+                toolResult.pocket = toolMap[id]['pocket'] or 0
+                toolResult.comment = toolMap[id]['comment'] or ''
+                txToolResult.pocket = toolMap[id]['pocket'] or 0
+                txToolResult.comment = toolMap[id]['comment'] or ''
 
     def update_tool_table(self, toolTable):
         if self.toolTablePath is '':
@@ -950,7 +950,7 @@ class LinuxCNCWrapper():
             value = float(self.ini.find('DISPLAY', 'MIN_ANGULAR_VELOCITY') or 0.01)
             modified |= self.update_config_value('min_angular_velocity', value)
 
-            value = self.ini.find('DISPLAY', 'INCREMENTS') or '1.0 0.1 0.01 0.001'
+            value = self.ini.find('DISPLAY', 'INCREMENTS') or '0.001 0.01 0.1 1.0'
             modified |= self.update_config_value('increments', value)
 
             value = self.ini.find('DISPLAY', 'GRIDS') or ''
@@ -1107,6 +1107,7 @@ class LinuxCNCWrapper():
         for index, statToolResult in enumerate(stat.tool_table):
             txToolResult.Clear()
             resultModified = False
+            newItem = False
 
             if (index == 0 and not self.randomToolChanger):
                 continue
@@ -1114,17 +1115,18 @@ class LinuxCNCWrapper():
             if (statToolResult.id == -1 and not self.randomToolChanger):
                 break  # last tool in table, except index = 0 (spindle !)
 
-            if len(self.status.io.tool_table) == tableIndex:
-                self.status.io.tool_table.add()
-                self.status.io.tool_table[tableIndex].index = tableIndex
-                self.status.io.tool_table[tableIndex].id = 0
-                self.status.io.tool_table[tableIndex].offset.MergeFrom(self.zero_position())
-                self.status.io.tool_table[tableIndex].diameter = 0.0
-                self.status.io.tool_table[tableIndex].frontangle = 0.0
-                self.status.io.tool_table[tableIndex].backangle = 0.0
-                self.status.io.tool_table[tableIndex].orientation = 0
-                self.status.io.tool_table[tableIndex].comment = ""
-                self.status.io.tool_table[tableIndex].pocket = 0
+            if len(self.status.io.tool_table) == tableIndex:  # item added
+                item = self.status.io.tool_table.add()
+                item.index = tableIndex
+                item.id = 0
+                item.offset.MergeFrom(self.zero_position())
+                item.diameter = 0.0
+                item.frontangle = 0.0
+                item.backangle = 0.0
+                item.orientation = 0
+                item.comment = ""
+                item.pocket = 0
+                newItem = True
 
             toolResult = self.status.io.tool_table[tableIndex]
 
@@ -1146,7 +1148,10 @@ class LinuxCNCWrapper():
 
             if resultModified:
                 txToolResult.index = tableIndex
-                self.statusTx.io.tool_table.add().CopyFrom(txToolResult)
+                if newItem:
+                    self.statusTx.io.tool_table.add().CopyFrom(toolResult)  # make sure to send update
+                else:
+                    self.statusTx.io.tool_table.add().CopyFrom(txToolResult)
                 modified = True
                 toolTableChanged = True
 
@@ -2268,6 +2273,7 @@ def main():
     if debug:
         print("threads stopped")
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
